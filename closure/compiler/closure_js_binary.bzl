@@ -76,6 +76,9 @@ def _impl(ctx):
   if not ctx.attr.debug:
     args.append("--define=goog.DEBUG=false")
 
+  if ctx.configuration.coverage_enabled:
+    args.append("--coverage")
+
   # These ClosureJsLibrary protocol buffers contain information about which
   # errors should be suppressed in which files.
   for info in js.infos:
@@ -177,6 +180,10 @@ def _impl(ctx):
   for src in js.srcs:
     args.append(src.path)
     inputs.append(src)
+  
+  if ctx.configuration.coverage_enabled:
+    args.append(ctx.file._coverage_externs.path)
+    inputs.append(ctx.file._coverage_externs)
 
   # In order for us to feel comfortable creating an optimal experience for 99%
   # of users, we need to provide an escape hatch for the 1%. For example, a
@@ -268,6 +275,9 @@ closure_js_binary = rule(
             cfg="host"),
         "_closure_library_base": CLOSURE_LIBRARY_BASE_ATTR,
         "_closure_library_deps": CLOSURE_LIBRARY_DEPS_ATTR,
+        "_coverage_externs": attr.label(
+            default=Label("//closure/compiler:coverage_externs.js"),
+            allow_single_file=True),
     },
     outputs={
         "bin": "%{name}.js",

@@ -95,6 +95,7 @@ public final class JsCompiler implements CommandLineProgram {
     boolean expectWarnings = false;
     boolean exportTestFunctions = false;
     boolean sourceMapIncludeSourcesContent = false;
+    boolean instrumentForCoverage = false;
 
     // Compiler flags we want to read.
     Path jsOutputFile = null;
@@ -139,6 +140,9 @@ public final class JsCompiler implements CommandLineProgram {
         case "--create_source_map":
           createSourceMap = Paths.get(iargs.peek());
           break;
+        case "--coverage":
+          instrumentForCoverage = true;
+          continue;
         default:
           break;
       }
@@ -188,6 +192,7 @@ public final class JsCompiler implements CommandLineProgram {
             compiler,
             exportTestFunctions,
             sourceMapIncludeSourcesContent,
+            instrumentForCoverage,
             warnings);
     if (runner.shouldRunCompiler()) {
       failed |= runner.go() != 0;

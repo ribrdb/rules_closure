@@ -16,6 +16,8 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache 2.0
 
+exports_files(["coverage_externs.js"])
+
 java_library(
     name = "compiler",
     exports = ["@com_google_javascript_closure_compiler"],

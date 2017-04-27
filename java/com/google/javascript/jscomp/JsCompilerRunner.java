@@ -24,6 +24,7 @@ final class JsCompilerRunner extends CommandLineRunner {
   private final Compiler compiler;
   private final boolean exportTestFunctions;
   private final boolean sourceMapIncludeSourcesContent;
+  private final boolean instrumentForCoverage;
   private final WarningsGuard warnings;
 
   JsCompilerRunner(
@@ -31,11 +32,13 @@ final class JsCompilerRunner extends CommandLineRunner {
       Compiler compiler,
       boolean exportTestFunctions,
       boolean sourceMapIncludeSourcesContent,
+      boolean instrumentForCoverage,
       WarningsGuard warnings) {
     super(Iterables.toArray(args, String.class));
     this.compiler = compiler;
     this.exportTestFunctions = exportTestFunctions;
     this.sourceMapIncludeSourcesContent = sourceMapIncludeSourcesContent;
+    this.instrumentForCoverage = instrumentForCoverage;
     this.warnings = warnings;;
   }
 
@@ -60,6 +63,10 @@ final class JsCompilerRunner extends CommandLineRunner {
     options.setExportTestFunctions(exportTestFunctions);
     options.addWarningsGuard(warnings);
     options.setSourceMapIncludeSourcesContent(sourceMapIncludeSourcesContent);
+    if (instrumentForCoverage) {
+      options.setInstrumentForCoverage(true);
+      //options.setInstrumentBranchCoverage(true);
+    }
     return options;
   }
 }

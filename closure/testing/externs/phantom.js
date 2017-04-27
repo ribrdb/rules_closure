@@ -69,6 +69,10 @@ phantomjs.System.prototype.stdout;
  */
 phantomjs.System.prototype.stderr;
 
+/**
+ * @type {!IObject<string,string>}
+ */
+phantomjs.System.prototype.env;
 
 /**
  * @record
@@ -90,6 +94,14 @@ phantomjs.FileSystem = class {
    * @const
    */
   read(path, parameters) {}
+
+  /**
+   * 
+   * @param {string} path 
+   * @param {string} content
+   * @param {string|{mode:(string|undefined), charset: (string|undefined)}} mode 
+   */
+  write(path, content, mode) {}
 };
 
 
@@ -181,6 +193,12 @@ phantomjs.Page = class {
    * @const
    */
   evaluate(callback) {}
+
+  /**
+   * @param {string} code
+   * @return {*}
+   */
+  evaluateJavaScript(code) {}
 
   /**
    * @param {string} message

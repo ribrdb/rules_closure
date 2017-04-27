@@ -198,6 +198,17 @@ function onAlert(message) {
   system.stderr.writeLine('Alert: ' + message);
 }
 
+/**
+ * Writes out coverage data.
+ */
+function writeCoverage() {
+  if (system.env['COVERAGE']) {
+    var jscov = /** @type {string} */ (page.evaluateJavaScript('function(){return JSON.stringify(window.__jscov);}'));
+    if (jscov) {
+      fs.write(system.env['TEST_UNDECLARED_OUTPUTS_DIR']+'/cov.json', jscov, 'w');
+    }
+  }
+}
 
 /**
  * Callback when headless web page throws an error.
@@ -214,6 +225,7 @@ function onError(message, trace) {
     msg += t.file + ':' + t.line;
     system.stderr.writeLine(msg);
   });
+  writeCoverage();
   page.close();
   phantom.exit(1);
 }
@@ -224,6 +236,7 @@ function onError(message, trace) {
  * @param {boolean} succeeded
  */
 function onCallback(succeeded) {
+  writeCoverage();
   page.close();
   if (succeeded) {
     phantom.exit();

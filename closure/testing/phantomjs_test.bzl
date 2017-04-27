@@ -36,7 +36,11 @@ def _impl(ctx):
       srcs += [dep.closure_js_binary.bin]
     else:
       srcs += dep.closure_js_library.srcs
-  args = ["#!/bin/sh\nexec " + ctx.executable._phantomjs.short_path,
+  cmd = "#!/bin/sh\n"
+  if ctx.configuration.coverage_enabled:
+    cmd += "export COVERAGE=1\n"
+  cmd += "exec " + ctx.executable._phantomjs.short_path
+  args = [cmd,
           ctx.attr.harness.closure_js_binary.bin.short_path,
           ctx.file.html.short_path]
   args += [long_path(ctx, src) for src in srcs]
