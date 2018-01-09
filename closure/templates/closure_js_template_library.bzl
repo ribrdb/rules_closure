@@ -24,6 +24,8 @@ _SOYTOINCREMENTALDOMSRCCOMPILER = "@com_google_template_soy//:SoyToIncrementalDo
 
 def _impl(ctx):
   if ctx.attr.incremental_dom:
+    if not ctx.attr.should_generate_js_doc:
+      fail('should_generate_js_doc must be 1 when using incremental_dom')
     if not ctx.attr.should_provide_require_soy_namespaces:
       fail('should_provide_require_soy_namespaces must be 1 ' +
            'when using incremental_dom')
@@ -39,6 +41,8 @@ def _impl(ctx):
   if not ctx.attr.incremental_dom:
     if ctx.attr.soy_msgs_are_external:
       args += ["--googMsgsAreExternal"]
+    if not ctx.attr.should_generate_js_doc:
+      args += ["--shouldGenerateJsdoc=false"]
     if ctx.attr.should_provide_require_soy_namespaces:
       args += ["--shouldProvideRequireSoyNamespaces"]
     if ctx.attr.should_generate_soy_msg_defs:
@@ -77,6 +81,7 @@ _closure_js_template_library = rule(
         "outputs": attr.output_list(),
         "globals": attr.label(allow_files=True, single_file=True),
         "plugin_modules": attr.label_list(),
+        "should_generate_js_doc": attr.bool(default=True),
         "should_provide_require_soy_namespaces": attr.bool(default=True),
         "should_generate_soy_msg_defs": attr.bool(),
         "soy_msgs_are_external": attr.bool(),
@@ -94,6 +99,7 @@ def closure_js_template_library(
     testonly = None,
     globals = None,
     plugin_modules = None,
+    should_generate_js_doc = None,
     should_provide_require_soy_namespaces = None,
     should_generate_soy_msg_defs = None,
     soy_msgs_are_external = None,
@@ -113,6 +119,7 @@ def closure_js_template_library(
       visibility = ["//visibility:private"],
       globals = globals,
       plugin_modules = plugin_modules,
+      should_generate_js_doc = should_generate_js_doc,
       should_provide_require_soy_namespaces = should_provide_require_soy_namespaces,
       should_generate_soy_msg_defs = should_generate_soy_msg_defs,
       soy_msgs_are_external = soy_msgs_are_external,
