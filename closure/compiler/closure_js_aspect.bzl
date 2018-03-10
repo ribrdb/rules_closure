@@ -37,7 +37,7 @@ def _closure_js_aspect_impl(target, ctx):
   no_closure_library = True
   for dep in deps:
     if dep.closure_js_library.has_closure_library:
-    no_closure_library = False
+      no_closure_library = False
     break
   testonly = getattr(ctx.rule.attr, 'testonly', False)
   
