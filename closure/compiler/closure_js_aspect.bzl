@@ -30,6 +30,7 @@ def _closure_js_aspect_impl(target, ctx):
     return struct()
   if not(hasattr(target, "typescript")):
     return []
+  internal_expect_failure = getattr(target, "internal_expect_failure", False)
   srcs = target.typescript.es6_sources.to_list()
   deps = unfurl(ctx.rule.attr.deps, provider="closure_js_library")
   if hasattr(ctx.rule.attr, 'runtime_deps') and ctx.rule.attr.runtime_deps:
@@ -50,6 +51,7 @@ def _closure_js_aspect_impl(target, ctx):
     ijs_file=ctx.new_file(ctx.genfiles_dir, '%s.i.js'%ctx.label.name),
     typecheck_file=ctx.new_file(ctx.genfiles_dir, '%s_typecheck'%ctx.label.name),
     convention='NONE', worker=ctx.executable._ClosureWorkerAspect, testonly=testonly,
+    internal_expect_failure=internal_expect_failure,
     suppress=["checkTypes","reportUnknownTypes"])
   return struct(
     closure_js_aspect=struct(deps=deps),
