@@ -82,6 +82,7 @@ def _closure_js_library_impl(ctx):
   return struct(
     files=depset(),
     closure_js_library=result.closure_js_library,
+    clutz_dts=ctx.file.internal_dts,
     exports=result.exports,
     # The usual suspects are exported as runfiles, in addition to raw source.
     runfiles=ctx.runfiles(
@@ -121,6 +122,7 @@ _closure_js_library = rule(
 
         # internal only
         "internal_descriptors": attr.label_list(allow_files=True),
+        "internal_dts": attr.label(allow_single_file=True),
         "internal_expect_failure": attr.bool(default=False),
         "_ClosureWorker": CLOSURE_WORKER_ATTR,
         "_closure_library_base": CLOSURE_LIBRARY_BASE_ATTR,
@@ -170,8 +172,8 @@ _gen_dts = rule(
 )
 
 def closure_js_library(**kwargs):
-  _closure_js_library(**kwargs)
-  dts_srcs = kwargs.get("srcs", [])+kwargs.get("externs",[])
   name = kwargs["name"]
+  _closure_js_library(internal_dts=name+".d.ts", **kwargs)
+  dts_srcs = kwargs.get("srcs", [])+kwargs.get("externs",[])
   # Use tags=["manual"] so that bazel test foo:all doesn't build the .d.ts files.
   _gen_dts(name=name+"-gen_dts",srcs=dts_srcs, output=name+".d.ts", tags=["manual"])
