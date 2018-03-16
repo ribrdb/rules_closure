@@ -78,11 +78,11 @@ def _closure_js_library_impl(ctx):
       internal_descriptors=ctx.files.internal_descriptors,
       internal_expect_failure=ctx.attr.internal_expect_failure,
       suppress=ctx.attr.suppress, worker=ctx.executable._ClosureWorker)
-  
+
   return struct(
     files=depset(),
     closure_js_library=result.closure_js_library,
-    clutz_dts=ctx.file.internal_dts,
+    clutz_dts=ctx.attr.internal_dts.clutz_dts,
     exports=result.exports,
     # The usual suspects are exported as runfiles, in addition to raw source.
     runfiles=ctx.runfiles(
@@ -156,6 +156,10 @@ def _gen_dts_impl(ctx):
       arguments=[args],
       mnemonic="Clutz",
       progress_message="Running Clutz on %d JS files %s" % (len(srcs), ctx.label,))
+  dts_files = [output]
+  if ctx.file.internal_base:
+    dts_files.append(ctx.file.internal_base)
+  return struct(clutz_dts=dts_files)
 
 _gen_dts = rule(
     implementation=_gen_dts_impl,
@@ -168,12 +172,23 @@ _gen_dts = rule(
             executable = True,
             cfg = "host",
         ),
+        "internal_base":attr.label(
+            allow_single_file=True,
+            ),
     },
 )
 
 def closure_js_library(**kwargs):
   name = kwargs["name"]
-  _closure_js_library(internal_dts=name+".d.ts", **kwargs)
+  _closure_js_library(internal_dts=name+"-gen_dts", **kwargs)
   dts_srcs = kwargs.get("srcs", [])+kwargs.get("externs",[])
+  base=Label("@io_bazel_rules_closure//closure/library:base.d.ts")
+  if kwargs.get('no_closure_library'):
+    base=None
   # Use tags=["manual"] so that bazel test foo:all doesn't build the .d.ts files.
-  _gen_dts(name=name+"-gen_dts",srcs=dts_srcs, output=name+".d.ts", tags=["manual"])
+  _gen_dts(
+      name=name+"-gen_dts",
+      srcs=dts_srcs,
+      output=name+".d.ts",
+      tags=["manual"],
+      internal_base=base)
