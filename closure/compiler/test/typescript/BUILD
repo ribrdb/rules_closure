@@ -109,3 +109,20 @@ file_test(
     content = "",
     file = "c_wrapped-stderr.txt",
 )
+
+closure_js_library(
+    name = "d",
+    srcs = ["d.js"],
+)
+
+file_test(
+    name = "d_dts_containsFoo",
+    regexp = "function Foo",
+    file = "d.d.ts",
+)
+
+file_test(
+    name = "d_dts_containsModule",
+    regexp = "module 'goog:d'",
+    file = "d.d.ts",
+)

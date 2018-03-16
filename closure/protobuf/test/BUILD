@@ -16,6 +16,7 @@ package(default_testonly = True)
 
 licenses(["notice"])  # Apache 2.0
 
+load("//closure/private:file_test.bzl", "file_test")
 load("//closure/compiler:closure_js_library.bzl", "closure_js_library")
 load("//closure/protobuf:closure_js_proto_library.bzl", "closure_js_proto_library")
 load("//closure/testing:closure_js_test.bzl", "closure_js_test")
@@ -42,4 +43,16 @@ closure_js_test(
         ":example_lib",
         "//closure/library:testing",
     ],
+)
+
+file_test(
+    name="example_proto_dtsContainsClass",
+    regexp="class Message",
+    file="example_proto.d.ts",
+)
+
+file_test(
+    name="example_proto_dtsContainsModule",
+    regexp="module 'goog:proto.io.bazel.rules.closure.protobuf.Message'",
+    file="example_proto.d.ts",
 )

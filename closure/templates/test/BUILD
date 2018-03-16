@@ -150,6 +150,19 @@ file_test(
     regexp = "class GreeterSoyInfo",
 )
 
+
+file_test(
+    name="greeter_soy_dtsContainsFunction",
+    regexp="function greet",
+    file="greeter_soy.d.ts",
+)
+
+file_test(
+    name="greeter_soy_dtsContainsModule",
+    regexp="module 'goog:io.bazel.rules.closure.soy.greeter'",
+    file="greeter_soy.d.ts",
+)
+
 ################################################################################
 # If we forget to pass a parameter to a template, it will fail to compile
 
