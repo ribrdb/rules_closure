@@ -21,6 +21,9 @@ load("//closure/private:defs.bzl",
      "long_path",
      "unfurl")
 
+load("//closure/compiler:closure_js_aspect.bzl",
+     "closure_js_aspect")
+
 def _impl(ctx):
   deps = unfurl(ctx.attr.deps, provider="closure_js_library")
   js = collect_js(ctx, deps)
@@ -78,7 +81,7 @@ def _make_prefix(prefix, closure_root, closure_rel):
 closure_js_deps = rule(
     implementation=_impl,
     attrs={
-        "deps": attr.label_list(),
+        "deps": attr.label_list(aspects=[closure_js_aspect]),
         "data": attr.label_list(cfg="data", allow_files=True),
         "_closure_library_base": CLOSURE_LIBRARY_BASE_ATTR,
         "_depswriter": attr.label(
