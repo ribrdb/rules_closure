@@ -8,6 +8,7 @@ licenses(["notice"])  # MIT
 exports_files([
     "LICENSE",
     "src/resources/closure.lib.d.ts",
+    "src/resources/partial_goog_base.js",
 ])
 
 JVM_FLAGS = [
