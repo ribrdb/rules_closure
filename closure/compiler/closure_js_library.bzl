@@ -161,20 +161,17 @@ def _gen_dts_impl(ctx):
     return struct(clutz_dts=ctx.attr.ts_lib.typescript.declarations)
   srcs = ctx.files.srcs
   output = ctx.outputs.output
-  args = ctx.actions.args()
-  args.add("--partialInput")
-  args.add("-o")
-  args.add(output.path)
-  args.add("--skipEmitRegExp")
-  args.add(ctx.file._clutz_mock_goog_base)
-  args.add(ctx.file._clutz_mock_goog_base)
-  args.add(ctx.file._clutz_externs)
-  args.add(srcs)
+  args = [
+      "--partialInput", "-o", output.path, "--skipEmitRegExp",
+      ctx.file._clutz_mock_goog_base.path,
+      ctx.file._clutz_mock_goog_base.path,
+      ctx.file._clutz_externs.path,
+  ]+[f.path for f in srcs]
   ctx.action(
       inputs=srcs+[ctx.file._clutz_mock_goog_base, ctx.file._clutz_externs],
       outputs=[output],
       executable=ctx.executable._clutz,
-      arguments=[args],
+      arguments=args,
       mnemonic="Clutz",
       progress_message="Running Clutz on %d JS files %s" % (len(srcs), ctx.label,))
   dts_files = [output]
@@ -229,4 +226,5 @@ def closure_js_library(**kwargs):
       output=output,
       ts_lib=ts_lib,
       tags=["manual"],
-      internal_base=base)
+      internal_base=base,
+      testonly=kwargs.get("testonly", None))

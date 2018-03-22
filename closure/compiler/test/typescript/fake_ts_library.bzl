@@ -14,7 +14,8 @@
 
 def _fake_ts_library(ctx):
     return struct(typescript=struct(
-        es6_sources=depset(ctx.files.srcs)
+        es6_sources=depset(ctx.files.srcs),
+        declarations=depset(),
     ),
     internal_expect_failure=ctx.attr.internal_expect_failure)
 
