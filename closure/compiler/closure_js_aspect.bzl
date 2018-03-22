@@ -35,6 +35,13 @@ def _closure_js_aspect_impl(target, ctx):
   deps = unfurl(ctx.rule.attr.deps, provider="closure_js_library")
   if hasattr(ctx.rule.attr, 'runtime_deps') and ctx.rule.attr.runtime_deps:
     deps += unfurl(ctx.rule.attr.runtime_deps, provider="closure_js_library")
+  # TS library doesn't have exports yet, so treat deps as exports if there's
+  # no srcs.
+  default_exports = []
+  if not srcs:
+    default_exports = deps
+  exports = getattr(ctx.rule.attr, 'exports', default_exports)
+
   no_closure_library = True
   for dep in deps:
     if dep.closure_js_library.has_closure_library:
@@ -44,7 +51,7 @@ def _closure_js_aspect_impl(target, ctx):
   
   result = js_checker(ctx,
     srcs=srcs, deps=deps,
-    exports=getattr(ctx.rule.attr, 'exports',[]),
+    exports=exports,
     no_closure_library=no_closure_library,
     info_file=ctx.new_file(ctx.genfiles_dir, '%s.pbtxt'%ctx.label.name),
     stderr_file=ctx.new_file(ctx.genfiles_dir, '%s-stderr.txt'%ctx.label.name),
@@ -52,7 +59,9 @@ def _closure_js_aspect_impl(target, ctx):
     typecheck_file=ctx.new_file(ctx.genfiles_dir, '%s_typecheck'%ctx.label.name),
     convention='NONE', worker=ctx.executable._ClosureWorkerAspect, testonly=testonly,
     internal_expect_failure=internal_expect_failure,
-    suppress=["checkTypes","reportUnknownTypes"])
+    # TSickle uses a weird require pattern that causes JSC_EXTRA_REQUIRE_WARNING for
+    # every goog.require.
+    suppress=["checkTypes","reportUnknownTypes", "JSC_EXTRA_REQUIRE_WARNING"])
   return struct(
     closure_js_aspect=struct(deps=deps),
     closure_js_library=result.closure_js_library,
