@@ -168,9 +168,10 @@ def _gen_dts_impl(ctx):
   args.add("--skipEmitRegExp")
   args.add(ctx.file._clutz_mock_goog_base)
   args.add(ctx.file._clutz_mock_goog_base)
+  args.add(ctx.file._clutz_externs)
   args.add(srcs)
   ctx.action(
-      inputs=srcs+[ctx.file._clutz_mock_goog_base],
+      inputs=srcs+[ctx.file._clutz_mock_goog_base, ctx.file._clutz_externs],
       outputs=[output],
       executable=ctx.executable._clutz,
       arguments=[args],
@@ -197,6 +198,10 @@ _gen_dts = rule(
         ),
         "_clutz_mock_goog_base": attr.label(
           default=Label("@io_angular_clutz//:src/resources/partial_goog_base.js"),
+          allow_single_file=True,
+        ),
+        "_clutz_externs": attr.label(
+          default=Label("@io_bazel_rules_closure//third_party/clutz:externs.js"),
           allow_single_file=True,
         ),
         "internal_base":attr.label(
