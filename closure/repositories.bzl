@@ -557,10 +557,10 @@ def com_google_javascript_closure_compiler():
       name = "com_google_javascript_closure_compiler",
       licenses = ["reciprocal"],  # MPL v1.1 (Rhino AST), Apache 2.0 (JSCompiler)
       jar_urls = [
-          "https://mirror.bazel.build/repo1.maven.org/maven2/com/google/javascript/closure-compiler-unshaded/v20180101/closure-compiler-unshaded-v20180101.jar",
-          "http://repo1.maven.org/maven2/com/google/javascript/closure-compiler-unshaded/v20180101/closure-compiler-unshaded-v20180101.jar",
+          "https://mirror.bazel.build/repo1.maven.org/maven2/com/google/javascript/closure-compiler-unshaded/v20180204/closure-compiler-unshaded-v20180204.jar",
+          "http://repo1.maven.org/maven2/com/google/javascript/closure-compiler-unshaded/v20180204/closure-compiler-unshaded-v20180204.jar",
       ],
-      jar_sha256 = "94eaa89df2eb672a747ec2ce3ed7c06ed4f12f5737c32eef981cb2661a199737",
+      jar_sha256 = "953395152ea4dff8ff430b5fa7615ccdefc018448371250aac5024c13e63412a",
       deps = [
           "@com_google_code_gson",
           "@com_google_guava",
@@ -757,11 +757,11 @@ def io_angular_clutz():
   native.new_http_archive(
     name = "io_angular_clutz",
     build_file = str(Label("//third_party/clutz:clutz.BUILD")),
-    sha256 = "00c24702517628953dbb5aaf40e7e587d860bbb64ac71a2cdc1687dd691382f2",
-    strip_prefix = "clutz-1d731dc0e9bd3ca652e41240298a3693369d1289",
+    sha256 = "e2aa4e7e80bc6180113f0c5dc8b0d2cbe7478e478bf17a4166242a04e71714d2",
+    strip_prefix = "clutz-f1a5819c72c2bce2d0dd03a75f7315cee1abf455",
     urls = [
-        "https://mirror.bazel.build/github.com/angular/clutz/archive/1d731dc0e9bd3ca652e41240298a3693369d1289.tar.gz",  # 2017-11-02
-        "https://github.com/angular/clutz/archive/1d731dc0e9bd3ca652e41240298a3693369d1289.tar.gz",
+        "https://mirror.bazel.build/github.com/angular/clutz/archive/f1a5819c72c2bce2d0dd03a75f7315cee1abf455.tar.gz",  # 2017-11-02
+        "https://github.com/angular/clutz/archive/f1a5819c72c2bce2d0dd03a75f7315cee1abf455.tar.gz",
     ],
   )
 
