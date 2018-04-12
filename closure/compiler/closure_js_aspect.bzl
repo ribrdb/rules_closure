@@ -13,62 +13,26 @@
 # limitations under the License.
 
 load("//closure/private:defs.bzl",
-   "CLOSURE_WORKER_ATTR",
-   "JS_FILE_TYPE",
-   "collect_js",
-   "collect_runfiles",
-   "convert_path_to_es6_module_name",
-   "create_argfile",
-   "find_js_module_roots",
-   "make_jschecker_progress_message",
-   "unfurl",
-   "js_checker",
-)
+     "CLOSURE_WORKER_ATTR",
+     "JS_FILE_TYPE",
+     "collect_js",
+     "collect_runfiles",
+     "convert_path_to_es6_module_name",
+     "create_argfile",
+     "find_js_module_roots",
+     "make_jschecker_progress_message",
+     "unfurl")
 
 def _closure_js_aspect_impl(target, ctx):
   if hasattr(target, "closure_js_library"):
     return struct()
-  if not(hasattr(target, "typescript")):
-    return []
-  internal_expect_failure = getattr(target, "internal_expect_failure", False)
-  srcs = target.typescript.es6_sources.to_list()
-  deps = unfurl(ctx.rule.attr.deps, provider="closure_js_library")
-  if hasattr(ctx.rule.attr, 'runtime_deps') and ctx.rule.attr.runtime_deps:
-    deps += unfurl(ctx.rule.attr.runtime_deps, provider="closure_js_library")
-  # TS library doesn't have exports yet, so treat deps as exports if there's
-  # no srcs.
-  default_exports = []
-  if not srcs:
-    default_exports = deps
-  exports = getattr(ctx.rule.attr, 'exports', default_exports)
+  # This aspect is currently a no-op in the open source world. We intend to add
+  # content to it in the future. It is still provided to ensure the Skylark API
+  # is well defined.
+  return struct()
 
-  no_closure_library = True
-  for dep in deps:
-    if dep.closure_js_library.has_closure_library:
-      no_closure_library = False
-      break
-  testonly = getattr(ctx.rule.attr, 'testonly', False)
-  
-  result = js_checker(ctx,
-    srcs=srcs, deps=deps,
-    exports=exports,
-    no_closure_library=no_closure_library,
-    info_file=ctx.new_file(ctx.genfiles_dir, '%s.pbtxt'%ctx.label.name),
-    stderr_file=ctx.new_file(ctx.genfiles_dir, '%s-stderr.txt'%ctx.label.name),
-    ijs_file=ctx.new_file(ctx.genfiles_dir, '%s.i.js'%ctx.label.name),
-    typecheck_file=ctx.new_file(ctx.genfiles_dir, '%s_typecheck'%ctx.label.name),
-    convention='NONE', worker=ctx.executable._ClosureWorkerAspect, testonly=testonly,
-    internal_expect_failure=internal_expect_failure,
-    # TSickle uses a weird require pattern that causes JSC_EXTRA_REQUIRE_WARNING for
-    # every goog.require.
-    suppress=["checkTypes","reportUnknownTypes", "JSC_EXTRA_REQUIRE_WARNING"])
-  return struct(
-    closure_js_aspect=struct(deps=deps),
-    closure_js_library=result.closure_js_library,
-    exports=result.exports,
-  )
 
 closure_js_aspect = aspect(
-  implementation=_closure_js_aspect_impl,
-  attr_aspects=["deps", "sticky_deps", "exports", "runtime_deps"],
-  attrs={"_ClosureWorkerAspect": CLOSURE_WORKER_ATTR})
+    implementation=_closure_js_aspect_impl,
+    attr_aspects=["deps", "sticky_deps", "exports"],
+    attrs={"_ClosureWorkerAspect": CLOSURE_WORKER_ATTR})
