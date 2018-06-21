@@ -297,8 +297,8 @@ def _closure_js_library(ctx):
     fail("Either 'srcs', 'exports', or 'ts_lib' must be specified")
   if not ctx.files.srcs and ctx.attr.deps:
     fail("'srcs' must be set when using 'deps', otherwise consider 'exports'")
-  if not ctx.files.srcs and (ctx.attr.suppress or ctx.attr.lenient):
-    fail("'srcs' must be set when using 'suppress' or 'lenient'")
+  if not (ctx.files.srcs or ctx.attr.ts_lib) and (ctx.attr.suppress or ctx.attr.lenient):
+    fail("Either 'srcs' or 'ts_lib' must be set when using 'suppress' or 'lenient'")
   if ctx.attr.language:
     print("The closure_js_library 'language' attribute is now removed and " +
           "is always set to " + JS_LANGUAGE_IN)
