@@ -17,7 +17,6 @@
 load("//closure/private:defs.bzl",
      "CLOSURE_WORKER_ATTR",
      "CLOSURE_LIBRARY_BASE_ATTR",
-     "CLOSURE_LIBRARY_DEPS_ATTR",
      "JS_LANGUAGES",
      "JS_LANGUAGE_IN",
      "JS_LANGUAGE_OUT_DEFAULT",
@@ -43,7 +42,7 @@ def _impl(ctx):
         ctx.attr.language, ", ".join(JS_LANGUAGES)))
 
   deps = unfurl(ctx.attr.deps, provider="closure_js_library")
-  js = collect_js(ctx, deps, css=ctx.attr.css)
+  js = collect_js(deps, ctx.files._closure_library_base, css=ctx.attr.css)
   if not js.srcs:
     fail("There are no JS source files in the transitive closure")
 
@@ -100,8 +99,11 @@ def _impl(ctx):
   # should be cut off. These are basically the same thing as C++ include dirs,
   # except unlike C++ there's no I/O operation penalty to using them since all
   # source paths that exist are being passed as flags.
-  js_module_roots = sort_roots(find_js_module_roots(ctx, [ctx.outputs.bin]) +
-                               js.js_module_roots)
+  js_module_roots = sort_roots(
+      find_js_module_roots(
+          [ctx.outputs.bin], ctx.workspace_name, ctx.label,
+          getattr(ctx.attr, "includes", [])) +
+      js.js_module_roots)
   for root in js_module_roots:
     args.append("--js_module_root")
     args.append(root)
@@ -199,7 +201,7 @@ def _impl(ctx):
 
   # Insert an edge into the build graph that produces the minified version of
   # all JavaScript sources in the transitive closure, sans dead code.
-  argfile = create_argfile(ctx, args)
+  argfile = create_argfile(ctx.actions, ctx.label.name, args)
   inputs.append(argfile)
   ctx.action(
       inputs=inputs,
@@ -268,7 +270,6 @@ closure_js_binary = rule(
         "internal_expect_warnings": attr.bool(default=False),
         "_ClosureWorker": CLOSURE_WORKER_ATTR,
         "_closure_library_base": CLOSURE_LIBRARY_BASE_ATTR,
-        "_closure_library_deps": CLOSURE_LIBRARY_DEPS_ATTR,
     },
     outputs={
         "bin": "%{name}.js",

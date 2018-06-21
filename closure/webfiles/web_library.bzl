@@ -41,7 +41,7 @@ def _web_library(ctx):
   # process what came before
   deps = unfurl(ctx.attr.deps, provider="webfiles")
   webpaths = depset()
-  manifests = depset(order="topological")
+  manifests = depset(order="postorder")
   for dep in deps:
     webpaths += dep.webfiles.webpaths
     manifests += dep.webfiles.manifests
@@ -101,7 +101,7 @@ def _web_library(ctx):
     inputs.append(man)
     args.append("--transitive_dep")
     args.append(man.path)
-  argfile = create_argfile(ctx, args)
+  argfile = create_argfile(ctx.actions, ctx.label.name, args)
   inputs.append(argfile)
   ctx.action(
       inputs=inputs,

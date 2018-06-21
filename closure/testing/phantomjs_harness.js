@@ -51,7 +51,7 @@ var url;
 
 
 /**
- * HTML for virtual test page, hosted under {@code index.html}.
+ * HTML for virtual test page, hosted under `index.html`.
  * @type {string}
  */
 var virtualPageHtml;
@@ -78,7 +78,7 @@ var flakes = 0;
 
 
 /**
- * Guesses Content-Type header for {@code path}
+ * Guesses Content-Type header for `path`
  * @param {string} path
  * @return {string}
  */

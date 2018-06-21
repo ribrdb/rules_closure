@@ -1,11 +1,10 @@
 # Closure Rules for Bazel (αlpha) ![Travis build status](https://travis-ci.org/bazelbuild/rules_closure.svg?branch=master) [![Bazel CI build status](https://badge.buildkite.com/7569410e2a2661076591897283051b6d137f35102167253fed.svg)](https://buildkite.com/bazel/closure-compiler-rules-closure-postsubmit)
 
-
 JavaScript | Templating | Stylesheets | Miscellaneous
 --- | --- | --- | ---
 [closure_js_library] | [closure_js_template_library] | [closure_css_library] | [closure_js_proto_library]
 [closure_js_binary] | [closure_java_template_library] | [closure_css_binary] | [phantomjs_test]
-[closure_js_deps] | [closure_py_template_library] | |
+[closure_js_deps] | [closure_py_template_library] | | [closure_proto_library] \(Experimental\)
 [closure_js_test] | | |
 
 ## Overview
@@ -70,15 +69,18 @@ notes.
 
 ## Setup
 
-First you must [install][bazel-install] Bazel ≥0.3.1. Then you must add the
-following to your `WORKSPACE` file:
+First you must [install Bazel]. Then you add the following to your `WORKSPACE`
+file:
 
 ```python
 http_archive(
     name = "io_bazel_rules_closure",
-    strip_prefix = "rules_closure-0.4.1",
-    sha256 = "ba5e2e10cdc4027702f96e9bdc536c6595decafa94847d08ae28c6cb48225124",
-    url = "https://mirror.bazel.build/github.com/bazelbuild/rules_closure/archive/0.4.1.tar.gz",
+    sha256 = "a80acb69c63d5f6437b099c111480a4493bad4592015af2127a2f49fb7512d8d",
+    strip_prefix = "rules_closure-0.7.0",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_closure/archive/0.7.0.tar.gz",
+        "https://github.com/bazelbuild/rules_closure/archive/0.7.0.tar.gz",
+    ],
 )
 
 load("@io_bazel_rules_closure//closure:defs.bzl", "closure_repositories")
@@ -89,10 +91,12 @@ closure_repositories()
 You are not required to install the Closure Tools, PhantomJS, or anything else
 for that matter; they will be fetched automatically by Bazel.
 
-We also strongly recommend that you add the following to your `~/.bazelrc` file:
+### Tips
+
+Adding this to `~/.bazelrc` will make Protocol Buffers build 2x faster:
 
 ```
-build --strategy=Closure=worker
+build --distinct_host_configuration=false
 ```
 
 ### Overriding Dependency Versions
@@ -107,13 +111,28 @@ custom dependency version. A full list of dependencies is available from
 [repositories.bzl]. For example, to override the version of Guava:
 
 ```python
-load("@io_bazel_rules_closure//closure:defs.bzl", "closure_repositories")
-closure_repositories(omit_guava=True)
+load(
+    "@io_bazel_rules_closure//closure:defs.bzl",
+    "closure_repositories",
+    "java_import_external",
+)
 
-maven_jar(
-    name = "guava",
-    artifact = "...",
-    sha1 = "...",
+closure_repositories(
+    omit_com_google_guava=True,
+)
+
+java_import_external(
+    name = "com_google_guava",
+    licenses = ["notice"],  # Apache 2.0
+    jar_urls = [
+        "https://mirror.bazel.build/repo1.maven.org/maven2/com/google/guava/guava/24.1-jre/guava-24.1-jre.jar",
+        "https://repo1.maven.org/maven2/com/google/guava/guava/24.1-jre/guava-24.1-jre.jar",
+    ],
+    jar_sha256 = "31bfe27bdf9cba00cb4f3691136d3bc7847dfc87bfe772ca7a9eb68ff31d79f5",
+    exports = [
+        "@com_google_code_findbugs_jsr305",
+        "@com_google_errorprone_error_prone_annotations",
+    ],
 )
 ```
 
@@ -136,8 +155,8 @@ Please see the test directories within this project for concrete examples of usa
 
 ```python
 load("@io_bazel_rules_closure//closure:defs.bzl", "closure_js_library")
-closure_js_library(name, srcs, data, deps, language, exports, suppress,
-                   convention, no_closure_library)
+closure_js_library(name, srcs, data, deps, exports, suppress, convention,
+                   no_closure_library)
 ```
 
 Defines a set of JavaScript sources.
@@ -180,39 +199,6 @@ This rule can be referenced as though it were the following:
 - **deps:** (List of [labels]; optional) Direct [dependency] list. These can
   point to [closure_js_library], [closure_js_template_library],
   [closure_css_library] and [closure_js_proto_library] rules.
-
-- **language:** (String; optional; default is `"ECMASCRIPT5_STRICT"`) Variant of
-  JavaScript in which `srcs` are written. The following are valid options:
-
-  - `ECMASCRIPT6_STRICT`: Nitpicky, shiny new JavaScript.
-  - `ECMASCRIPT5_STRICT`: Nitpicky, traditional JavaScript.
-  - `ECMASCRIPT6`: Shiny new JavaScript.
-  - `ECMASCRIPT5`: Traditional JavaScript.
-  - `ECMASCRIPT3`: 90's JavaScript.
-  - `ANY`: Indicates sources are compatible with any variant of JavaScript.
-
-  Maintaining this attribute for your library rules is important because
-  [closure_js_binary] checks the `language` attribute of dependencies to
-  determine if it's a legal combination that's safe to compile.
-
-  ![ECMAScript Language Combinations Diagram](https://i.imgur.com/xNZ9FAr.png)
-
-  Combinations that traverse a red line cause strictness to decay and a warning
-  will be emitted. For example, if just one library is unstrict, then strictness
-  will be removed for your entire binary.  Therefore we *strongly* recommend
-  that you use strict variants.
-
-  **ProTip:** You are not required to put `"use strict"` at the tops of your
-  files. The Closure Compiler generates that in the output for you.
-
-  The default language is `ECMASCRIPT5_STRICT` for three reasons. First, we want
-  to make the most conservative recommendation possible. Some ES6 features have
-  not yet been implemented in the Closure Compiler. We're working on
-  that. Secondly, it upgrades easily into `ECMASCRIPT6_STRICT`, should you
-  choose to use it later. Thirdly, PhantomJS only supports `ECMASCRIPT5_STRICT`,
-  so your unit tests will be able to run lightning fast in raw sources mode if
-  you write your code exclusively in that language. (XXX: Unfortunately a
-  [bug][phantomjs-bug] in PhantomJS is blocking this at the moment.)
 
 - **exports:** (List of [labels]; optional) Listing dependencies here will cause
   them to become *direct* dependencies in parent rules. This functions similarly
@@ -624,9 +610,8 @@ This rule can be referenced as though it were the following:
   contain all transitive JS sources and data.
 
 - [closure_js_library]: `srcs` will be the generated JS output files, `data`
-  will contain the transitive data, `language` will be `ECMASCRIPT5_STRICT`,
-  `deps` will contain necessary libraries, and `no_closure_library` will be
-  `False`.
+  will contain the transitive data, `deps` will contain necessary libraries, and
+  `no_closure_library` will be `False`.
 
 ### Arguments
 
@@ -776,7 +761,7 @@ This rule can be referenced as though it were the following:
   contain all transitive CSS/GSS sources and data.
 
 - [closure_js_library]: `srcs` is empty, `data` is the transitive CSS sources
-  and data, `language` is `ANY`, and `no_closure_library` is `True`. However the
+  and data, and `no_closure_library` is `True`. However the
   closure\_css\_library rule does pass special information along when used as a
   dep in closure\_js\_library. See its documentation to learn more.
 
@@ -955,8 +940,7 @@ This rule can be referenced as though it were the following:
   sources and data.
 
 - [closure_js_library]: `srcs` will be the generated JS output files, `data`
-  will contain the transitive data, `language` will be `ECMASCRIPT5_STRICT`, and
-  `deps` will contain necessary libraries.
+  will contain the transitive data, and `deps` will contain necessary libraries.
 
 ### Arguments
 
@@ -982,7 +966,31 @@ This rule can be referenced as though it were the following:
   - `IMPORT_ES6`        // import { member } from ''
 
 
-[Bazel]: http://bazel.io/
+## closure\_proto\_library
+
+```python
+load("@io_bazel_rules_closure//closure:defs.bzl", "closure_proto_library")
+closure_proto_library(name, deps)
+```
+
+`closure_proto_library` generates JS code from `.proto` files.
+
+`deps` must point to [proto_library] rules.
+
+#### Rule Polymorphism
+
+This rule can be referenced as though it were the following:
+
+- [closure_js_library]: `srcs` will be the generated JS files,
+  and `deps` will contain necessary libraries.
+
+- **name:** ([Name]; required) A unique name for this rule. Convention states
+  that such rules be named `*_closure_proto`.
+
+- **deps:** (List of [labels]; required) The list of [proto_library] rules
+  to generate JS code for.
+
+[Bazel]: http://bazel.build/
 [Closure Compiler]: https://developers.google.com/closure/compiler/
 [Closure Library]: https://developers.google.com/closure/library/
 [Closure Stylesheets]: https://github.com/google/closure-stylesheets
@@ -994,14 +1002,14 @@ This rule can be referenced as though it were the following:
 [Google JavaScript Style Guide]: https://google.github.io/styleguide/jsguide.html
 [Google coding conventions]: https://github.com/google/closure-compiler/blob/master/src/com/google/javascript/jscomp/GoogleCodingConvention.java
 [Incremental DOM]: https://github.com/google/incremental-dom/
-[Name]: http://bazel.io/docs/build-ref.html#name
+[Name]: https://docs.bazel.build/versions/master/build-ref.html#name
 [PhantomJS]: http://phantomjs.org/
 [ProcessEs6Modules]: https://github.com/google/closure-compiler/blob/1281ed9ded137eaf578bb65a588850bf13f38aa4/src/com/google/javascript/jscomp/ProcessEs6Modules.java
 [Protocol Buffers]: https://github.com/google/protobuf
 [acyclic]: https://en.wikipedia.org/wiki/Directed_acyclic_graph
 [asserts]: https://github.com/google/closure-library/blob/master/closure/goog/testing/asserts.js#L1308
 [base.js]: https://github.com/google/closure-library/blob/master/closure/goog/base.js
-[bazel-install]: http://bazel.io/docs/install.html
+[install Bazel]: https://docs.bazel.build/versions/master/install.html
 [blockers]: https://github.com/bazelbuild/rules_closure/labels/launch%20blocker
 [closure_css_binary]: #closure_css_binary
 [closure_css_library]: #closure_css_library
@@ -1012,21 +1020,23 @@ This rule can be referenced as though it were the following:
 [closure_js_proto_library]: #closure_js_proto_library
 [closure_js_template_library]: #closure_js_template_library
 [closure_js_test]: #closure_js_test
+[closure_proto_library]: #closure_proto_library
 [closure_py_template_library]: #closure_py_template_library
 [coffeescript]: http://coffeescript.org/
 [compiler-issue]: https://github.com/google/closure-compiler/issues/new
 [css-sourcemap]: https://developer.chrome.com/devtools/docs/css-preprocessors
-[dependency]: http://bazel.io/docs/build-ref.html#dependencies
-[filegroup]: http://www.bazel.io/docs/be/general.html#filegroup
+[dependency]: https://docs.bazel.build/versions/master/build-ref.html#dependencies
+[filegroup]: https://docs.bazel.build/versions/master/be/general.html#filegroup
 [idom-example]: https://github.com/bazelbuild/rules_closure/blob/80d493d5ffc3099372929a8cd4a301da72e1b43f/closure/templates/test/greeter_idom.js
-[java_library.exports]: http://bazel.io/docs/be/java.html#java_library.exports
-[java_library]: http://www.bazel.io/docs/be/java.html#java_library
+[java_library.exports]: https://docs.bazel.build/versions/master/be/java.html#java_library.exports
+[java_library]: https://docs.bazel.build/versions/master/be/java.html#java_library
 [jquery]: http://jquery.com/
-[labels]: http://bazel.io/docs/build-ref.html#labels
+[labels]: https://docs.bazel.build/versions/master/build-ref.html#labels
 [managing dependencies]: https://github.com/google/closure-compiler/wiki/Managing-Dependencies
 [output-wrapper-faq]: https://github.com/google/closure-compiler/wiki/FAQ#when-using-advanced-optimizations-closure-compiler-adds-new-variables-to-the-global-scope-how-do-i-make-sure-my-variables-dont-collide-with-other-scripts-on-the-page
 [phantomjs-bug]: https://github.com/ariya/phantomjs/issues/14028
 [phantomjs_test]: #phantomjs_test
+[proto_library]: https://docs.bazel.build/versions/master/be/protocol-buffer.html#proto_library
 [protobuf-generator]: https://github.com/google/protobuf/blob/master/src/google/protobuf/compiler/js/js_generator.h
 [protobuf-js]: https://github.com/google/protobuf/tree/master/js
 [repositories.bzl]: https://github.com/bazelbuild/rules_closure/tree/master/closure/repositories.bzl

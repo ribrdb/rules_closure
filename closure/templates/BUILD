@@ -32,30 +32,28 @@ closure_js_proto_library(
 closure_js_library(
     name = "soy_jssrc",
     srcs = ["@com_google_template_soy_jssrc"],
-    suppress = [
-        "JSC_IMPLICITLY_NULLABLE_JSDOC",
-        "JSC_NTI_INEXISTENT_PROPERTY",
-        "JSC_NTI_NULLABLE_DEREFERENCE",
-        "JSC_NTI_RETURN_NONDECLARED_TYPE",
-        "JSC_NTI_UNKNOWN_EXPR_TYPE",
-        "JSC_NULLABLE_RETURN_WITH_NAME",
-        "JSC_STRICT_INEXISTENT_PROPERTY",
-        "JSC_UNKNOWN_EXPR_TYPE",
-    ],
+    lenient = True,
     deps = [
         ":soy_html_proto",
-        "//closure/library",
-    ],
-)
-
-closure_js_library(
-    name = "soy_jssrc_idom",
-    srcs = ["@com_google_template_soy_jssrc//:idom"],
-    suppress = ["reportUnknownTypes", "strictMissingProperties"],
-    deps = [
-        ":soy_jssrc",
-        "//closure/library",
-        "//third_party/javascript/incremental_dom",
+        "//closure/library/array",
+        "//closure/library/asserts",
+        "//closure/library/debug",
+        "//closure/library/format",
+        "//closure/library/html:safehtml",
+        "//closure/library/html:safescript",
+        "//closure/library/html:safestyle",
+        "//closure/library/html:safestylesheet",
+        "//closure/library/html:safeurl",
+        "//closure/library/html:trustedresourceurl",
+        "//closure/library/html:uncheckedconversions",
+        "//closure/library/i18n:bidi",
+        "//closure/library/i18n:bidiformatter",
+        "//closure/library/i18n:numberformat",
+        "//closure/library/object",
+        "//closure/library/soy:all_js",
+        "//closure/library/string",
+        "//closure/library/string:const",
+        "//closure/library/uri",
     ],
 )
 

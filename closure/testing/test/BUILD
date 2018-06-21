@@ -29,7 +29,10 @@ closure_js_test(
     name = "simple_test",
     timeout = "short",
     srcs = ["simple_test.js"],
-    deps = ["//closure/library:testing"],
+    deps = [
+        "//closure/library/testing:asserts",
+        "//closure/library/testing:jsunit",
+    ],
 )
 
 closure_js_library(
@@ -45,7 +48,9 @@ closure_js_test(
     entry_points = ["goog:arithmetic_module_test"],
     deps = [
         ":arithmetic_module_lib",
-        "//closure/library:testing",
+        "//closure/library/testing:asserts",
+        "//closure/library/testing:jsunit",
+        "//closure/library/testing:testsuite",
     ],
 )
 
@@ -55,7 +60,9 @@ closure_js_test(
     srcs = ["arithmetic_scope_test.js"],
     deps = [
         ":arithmetic_lib",
-        "//closure/library:testing",
+        "//closure/library/testing:asserts",
+        "//closure/library/testing:jsunit",
+        "//closure/library/testing:testsuite",
     ],
 )
 
@@ -88,16 +95,23 @@ genrule(
     tools = ["//third_party/phantomjs"],
 )
 
-files_equal_test(
-    name = "noto_fonts_render_as_expected",
-    actual = "fontdemo-generated.png",
-    golden = select({
-        ":darwin": "fontdemo-darwin.png",
-        "//conditions:default": "fontdemo.png",
-    }),
-)
-
-config_setting(
-    name = "darwin",
-    values = {"cpu": "darwin"},
-)
+# This test shows how to write tests to verify rendered output from phantomjs.
+# However, you shouln't do this because the output image depends on a lot of
+# external factors like operating system, GPU, ..., and therefore has a
+# very hight chance of being flaky.
+# https://github.com/bazelbuild/rules_closure/issues/247
+# https://github.com/bazelbuild/rules_closure/pull/186#issuecomment-279115018
+#
+# files_equal_test(
+#     name = "noto_fonts_render_as_expected",
+#     actual = "fontdemo-generated.png",
+#     golden = select({
+#         ":darwin": "fontdemo-darwin.png",
+#         "//conditions:default": "fontdemo.png",
+#     }),
+# )
+#
+# config_setting(
+#     name = "darwin",
+#     values = {"cpu": "darwin"},
+# )
