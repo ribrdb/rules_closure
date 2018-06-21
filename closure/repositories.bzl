@@ -783,11 +783,11 @@ def io_angular_clutz():
   native.new_http_archive(
     name = "io_angular_clutz",
     build_file = str(Label("//third_party/clutz:clutz.BUILD")),
-    sha256 = "e2aa4e7e80bc6180113f0c5dc8b0d2cbe7478e478bf17a4166242a04e71714d2",
-    strip_prefix = "clutz-f1a5819c72c2bce2d0dd03a75f7315cee1abf455",
+    sha256 = "7a5c785dbcc3ae0daa1fcf4507de6a23bbecdb2bf80460651e4c2b88c1ad7582",
+    strip_prefix = "clutz-7f1a3ee9ad9f85a9056084dc039496bbd35e11f6",
     urls = [
-        "https://mirror.bazel.build/github.com/angular/clutz/archive/f1a5819c72c2bce2d0dd03a75f7315cee1abf455.tar.gz",  # 2017-11-02
-        "https://github.com/angular/clutz/archive/f1a5819c72c2bce2d0dd03a75f7315cee1abf455.tar.gz",
+        "https://mirror.bazel.build/github.com/angular/clutz/archive/7f1a3ee9ad9f85a9056084dc039496bbd35e11f6.tar.gz",  # 2017-11-02
+        "https://github.com/angular/clutz/archive/7f1a3ee9ad9f85a9056084dc039496bbd35e11f6.tar.gz",
     ],
   )
 
