@@ -196,13 +196,6 @@ closure_js_library(
     lenient = True,
 )
 
-# To generate .d.ts for base.js
-closure_js_library(
-    name = "base",
-    srcs = ["@com_google_javascript_closure_library//:closure/goog/base.js"],
-    no_closure_library = True,
-)
-
 closure_css_library(
     name = "css",
     srcs = ["@com_google_javascript_closure_library//:css_files"],

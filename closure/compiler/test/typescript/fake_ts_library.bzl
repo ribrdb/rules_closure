@@ -15,14 +15,20 @@
 def _fake_ts_library(ctx):
     return struct(typescript=struct(
         es6_sources=depset(ctx.files.srcs),
+        transitive_es6_sources=depset(
+            ctx.files.srcs,
+            transitive=[d.typescript.transitive_es6_sources for d in ctx.attr.deps]),
         declarations=depset(),
+        runtime_deps=depset(
+            ctx.attr.runtime_deps,
+            transitive=[d.typescript.runtime_deps for d in ctx.attr.deps]),
     ),
     internal_expect_failure=ctx.attr.internal_expect_failure)
 
 fake_ts_library = rule(
     attrs = {
         "srcs": attr.label_list(allow_files = True),
-        "deps": attr.label_list(),
+        "deps": attr.label_list(providers = ["typescript"]),
         "data": attr.label_list(
             default = [],
             allow_files = True,

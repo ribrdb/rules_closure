@@ -49,6 +49,7 @@ def closure_js_library_impl(
     convention='CLOSURE',
     no_closure_library=False,
     internal_expect_failure=False,
+    ts_lib=None,
 
     # These file definitions for our outputs are deprecated,
     # and will be replaced with |actions.declare_file()| soon.
@@ -85,13 +86,11 @@ def closure_js_library_impl(
   # have the exports attribute, those labels become direct dependencies here.
   deps = unfurl(deps, provider="closure_js_library")
 
-  suppress = ctx.attr.suppress
-
   # Wrapper around a ts_library. It's  like creating a closure_js_library with 
   # the runtime_deps of the ts_library, and the srcs are the tsickle outputs from 
   # the ts_library.
-  if ctx.attr.ts_lib:
-    lib = ctx.attr.ts_lib
+  if ts_lib:
+    lib = ts_lib
     srcs = srcs + lib.typescript.transitive_es6_sources.to_list()
     deps = deps + lib.typescript.runtime_deps.to_list()
     suppress = suppress + ["checkTypes", "reportUnknownTypes", "analyzerChecks", "JSC_EXTRA_REQUIRE_WARNING"]
@@ -324,6 +323,7 @@ def _closure_js_library(ctx):
       ctx.attr.convention,
       ctx.attr.no_closure_library,
       ctx.attr.internal_expect_failure,
+      ctx.attr.ts_lib,
 
       # Deprecated output files.
       ctx.outputs.info, ctx.outputs.stderr,

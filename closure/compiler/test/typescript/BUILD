@@ -21,7 +21,7 @@ load("//closure:defs.bzl", "closure_js_binary")
 load("//closure:defs.bzl", "closure_js_library")
 load(":fake_ts_library.bzl", "fake_ts_library")
 
-closure_js_library(
+fake_ts_library(
     name = "a",
     srcs = ["a.js"],
 )
@@ -33,9 +33,14 @@ fake_ts_library(
 )
 
 closure_js_library(
+    name="b_js",
+    ts_lib=":b",
+)
+
+closure_js_library(
     name = "c",
     srcs = ["c.js"],
-    deps = [":b"],
+    deps = [":b_js"],
 )
 
 file_test(
@@ -44,85 +49,8 @@ file_test(
     file = "c-stderr.txt",
 )
 
-fake_ts_library(
-    name = "missingDep",
-    srcs = ["b.js"],
-    internal_expect_failure = True,
-)
-
-closure_js_library(
-    name = "c_missingDep",
-    srcs = ["c.js"],
-    deps = [":missingDep"],
-)
-
 file_test(
-    name = "c_missingDep_noWarnings",
+    name = "b_js_noWarnings",
     content = "",
-    file = "c_missingDep-stderr.txt",
-)
-
-# TODO: Can't access aspect output file
-# file_test(
-#     name = "missingDep_causesMissingProvideError",
-#     file = "missingDep-stderr.txt",
-#     regexp = "CR_NOT_PROVIDED",
-# )
-
-fake_ts_library(
-    name = "b_runtime_deps",
-    srcs = ["b.js"],
-    runtime_deps = [":a"],
-)
-
-closure_js_library(
-    name = "c_runtime_deps",
-    srcs = ["c.js"],
-    deps = [":b_runtime_deps"],
-)
-
-file_test(
-    name = "c_runtime_deps_noWarnings",
-    content = "",
-    file = "c_runtime_deps-stderr.txt",
-)
-
-closure_js_library(
-    name = "b_wrapped",
-    ts_lib = ":b",
-)
-
-closure_js_library(
-    name = "c_wrapped",
-    srcs = ["c.js"],
-    deps = [":b_wrapped"],
-)
-
-file_test(
-    name = "b_wrapped_noWarnings",
-    content = "",
-    file = "b_wrapped-stderr.txt",
-)
-
-file_test(
-    name = "c_wrapped_noWarnings",
-    content = "",
-    file = "c_wrapped-stderr.txt",
-)
-
-closure_js_library(
-    name = "d",
-    srcs = ["d.js"],
-)
-
-file_test(
-    name = "d_dts_containsFoo",
-    regexp = "function Foo",
-    file = "d.d.ts",
-)
-
-file_test(
-    name = "d_dts_containsModule",
-    regexp = "module 'goog:d'",
-    file = "d.d.ts",
+    file = "b_js-stderr.txt",
 )
