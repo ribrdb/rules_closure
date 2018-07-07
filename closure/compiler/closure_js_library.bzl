@@ -82,18 +82,18 @@ def closure_js_library_impl(
   ijs_file = _maybe_declare_file(
       actions, deprecated_ijs_file, '%s.i.js' % label.name)
 
-  # Create a list of direct children of this rule. If any direct dependencies
-  # have the exports attribute, those labels become direct dependencies here.
-  deps = unfurl(deps, provider="closure_js_library")
-
   # Wrapper around a ts_library. It's  like creating a closure_js_library with 
   # the runtime_deps of the ts_library, and the srcs are the tsickle outputs from 
   # the ts_library.
   if ts_lib:
-    lib = ts_lib
-    srcs = srcs + lib.typescript.transitive_es6_sources.to_list()
-    deps = deps + lib.typescript.runtime_deps.to_list()
+    srcs = srcs + ts_lib.typescript.transitive_es6_sources.to_list()
+    # Note that we need to modify deps before calling unfurl below for exports to work.
+    deps = deps + ts_lib.typescript.runtime_deps.to_list()
     suppress = suppress + ["checkTypes", "reportUnknownTypes", "analyzerChecks", "JSC_EXTRA_REQUIRE_WARNING"]
+
+  # Create a list of direct children of this rule. If any direct dependencies
+  # have the exports attribute, those labels become direct dependencies here.
+  deps = unfurl(deps, provider="closure_js_library")
 
   # Collect all the transitive stuff the child rules have propagated. Bazel has
   # a special nested set data structure that makes this efficient.

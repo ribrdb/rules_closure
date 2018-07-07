@@ -20,7 +20,9 @@ goog.require('b');
 /**
  * Function C.
  */
-function c() {
-  b();
+c.c = function() {
+  b.b();
   console.log('c');
-}
+};
+
+goog.exportSymbol('test.c',c.c);

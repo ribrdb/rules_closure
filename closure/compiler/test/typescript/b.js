@@ -20,7 +20,7 @@ goog.require('a');
 /**
  * Function B.
  */
-function b() {
-  a();
+b.b = function() {
+  a.a();
   console.log('b');
-}
+};

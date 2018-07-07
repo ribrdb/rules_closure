@@ -33,8 +33,8 @@ fake_ts_library(
 )
 
 closure_js_library(
-    name="b_js",
-    ts_lib=":b",
+    name = "b_js",
+    ts_lib = ":b",
 )
 
 closure_js_library(
@@ -53,4 +53,49 @@ file_test(
     name = "b_js_noWarnings",
     content = "",
     file = "b_js-stderr.txt",
+)
+
+closure_js_binary(
+    name = "c_bin",
+    entry_points = ["c"],
+    deps = ["c"],
+)
+
+file_test(
+    name = "c_bin_noWarnings",
+    content = "",
+    file = "c_bin-stderr.txt",
+)
+
+fake_ts_library(
+    name = "ts_closure",
+    runtime_deps = ["//closure/library"],
+)
+
+fake_ts_library(
+    name = "use_closure",
+    srcs = ["use_closure.js"],
+    deps = ["ts_closure"],
+)
+
+closure_js_library(
+    name = "use_closure_js",
+    ts_lib = "use_closure",
+)
+
+closure_js_binary(
+    name = "use_closure_bin",
+    deps = ["use_closure_js"],
+)
+
+file_test(
+    name = "use_closure_js_noWarnings",
+    content = "",
+    file = "use_closure_js-stderr.txt",
+)
+
+file_test(
+    name = "use_closure_bin_noWarnings",
+    content = "",
+    file = "use_closure_bin-stderr.txt",
 )

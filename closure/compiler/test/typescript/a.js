@@ -18,6 +18,6 @@ goog.provide('a');
 /**
  * Function A.
  */
-function a() {
+a.a = function() {
   console.log('a');
-}
+};
