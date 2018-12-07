@@ -53,6 +53,7 @@ def closure_repositories(
     omit_com_squareup_javapoet=False,
     omit_fonts_noto_hinted_deb=False,
     omit_fonts_noto_mono_deb=False,
+    omit_io_angular_clutz=False,
     omit_javax_annotation_jsr250_api=False,
     omit_javax_inject=False,
     omit_libexpat_amd64_deb=False,
@@ -136,6 +137,8 @@ def closure_repositories(
     fonts_noto_hinted_deb()
   if not omit_fonts_noto_mono_deb:
     fonts_noto_mono_deb()
+  if not omit_io_angular_clutz:
+    io_angular_clutz()
   if not omit_javax_annotation_jsr250_api:
     javax_annotation_jsr250_api()
   if not omit_javax_inject:
@@ -774,6 +777,18 @@ def fonts_noto_mono_deb():
           "http://http.us.debian.org/debian/pool/main/f/fonts-noto/fonts-noto-mono_20161116-1_all.deb",
       ],
       sha256 = "71ff715cf50a74a8cc11b02e7c906b69a242d3d677e739e0b2d18cd23b7de375",
+  )
+
+def io_angular_clutz():
+  native.new_http_archive(
+    name = "io_angular_clutz",
+    build_file = str(Label("//third_party/clutz:clutz.BUILD")),
+    sha256 = "7a5c785dbcc3ae0daa1fcf4507de6a23bbecdb2bf80460651e4c2b88c1ad7582",
+    strip_prefix = "clutz-7f1a3ee9ad9f85a9056084dc039496bbd35e11f6",
+    urls = [
+        "https://mirror.bazel.build/github.com/angular/clutz/archive/7f1a3ee9ad9f85a9056084dc039496bbd35e11f6.tar.gz",  # 2017-11-02
+        "https://github.com/angular/clutz/archive/7f1a3ee9ad9f85a9056084dc039496bbd35e11f6.tar.gz",
+    ],
   )
 
 def javax_annotation_jsr250_api():

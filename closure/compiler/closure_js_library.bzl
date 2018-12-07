@@ -49,6 +49,7 @@ def closure_js_library_impl(
     convention='CLOSURE',
     no_closure_library=False,
     internal_expect_failure=False,
+    ts_lib=None,
 
     # These file definitions for our outputs are deprecated,
     # and will be replaced with |actions.declare_file()| soon.
@@ -80,6 +81,15 @@ def closure_js_library_impl(
       actions, deprecated_stderr_file, '%s-stderr.txt' % label.name)
   ijs_file = _maybe_declare_file(
       actions, deprecated_ijs_file, '%s.i.js' % label.name)
+
+  # Wrapper around a ts_library. It's  like creating a closure_js_library with 
+  # the runtime_deps of the ts_library, and the srcs are the tsickle outputs from 
+  # the ts_library.
+  if ts_lib:
+    srcs = srcs + ts_lib.typescript.transitive_es6_sources.to_list()
+    # Note that we need to modify deps before calling unfurl below for exports to work.
+    deps = deps + ts_lib.typescript.runtime_deps.to_list()
+    suppress = suppress + ["checkTypes", "reportUnknownTypes", "analyzerChecks", "JSC_EXTRA_REQUIRE_WARNING"]
 
   # Create a list of direct children of this rule. If any direct dependencies
   # have the exports attribute, those labels become direct dependencies here.
@@ -283,12 +293,12 @@ def closure_js_library_impl(
           has_closure_library=js.has_closure_library))
 
 def _closure_js_library(ctx):
-  if not ctx.files.srcs and not ctx.files.externs and not ctx.attr.exports:
-    fail("Either 'srcs' or 'exports' must be specified")
+  if not ctx.files.srcs and not ctx.files.externs and not ctx.attr.exports and not ctx.attr.ts_lib:
+    fail("Either 'srcs', 'exports', or 'ts_lib' must be specified")
   if not ctx.files.srcs and ctx.attr.deps:
     fail("'srcs' must be set when using 'deps', otherwise consider 'exports'")
-  if not ctx.files.srcs and (ctx.attr.suppress or ctx.attr.lenient):
-    fail("'srcs' must be set when using 'suppress' or 'lenient'")
+  if not (ctx.files.srcs or ctx.attr.ts_lib) and (ctx.attr.suppress or ctx.attr.lenient):
+    fail("Either 'srcs' or 'ts_lib' must be set when using 'suppress' or 'lenient'")
   if ctx.attr.language:
     print("The closure_js_library 'language' attribute is now removed and " +
           "is always set to " + JS_LANGUAGE_IN)
@@ -313,6 +323,7 @@ def _closure_js_library(ctx):
       ctx.attr.convention,
       ctx.attr.no_closure_library,
       ctx.attr.internal_expect_failure,
+      ctx.attr.ts_lib,
 
       # Deprecated output files.
       ctx.outputs.info, ctx.outputs.stderr,
@@ -352,6 +363,9 @@ closure_js_library = rule(
         "srcs": attr.label_list(allow_files=JS_FILE_TYPE),
         "suppress": attr.string_list(),
         "lenient": attr.bool(),
+        "ts_lib": attr.label(
+            providers = ["typescript"],
+        ),
 
         # deprecated
         "externs": attr.label_list(allow_files=JS_FILE_TYPE),
