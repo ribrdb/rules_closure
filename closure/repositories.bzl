@@ -696,7 +696,7 @@ def com_google_protobuf_js():
         ],
         sha256 = "2244b0308846bb22b4ff0bcc675e99290ff9f1115553ae9671eba1030af31bc0",
         strip_prefix = "protobuf-3.6.1.2/js",
-        patches = ["//closure:patch_protobuf.patch"],
+        patches = ["@io_bazel_rules_closure//closure:patch_protobuf.patch"],
         patch_args = ["-p1"],
         build_file = str(Label("//closure/protobuf:protobuf_js.BUILD")),
     )
@@ -800,7 +800,7 @@ def fonts_noto_mono_deb():
     )
 
 def io_angular_clutz():
-  native.new_http_archive(
+  http_archive(
     name = "io_angular_clutz",
     build_file = str(Label("//third_party/clutz:clutz.BUILD")),
     sha256 = "7a5c785dbcc3ae0daa1fcf4507de6a23bbecdb2bf80460651e4c2b88c1ad7582",

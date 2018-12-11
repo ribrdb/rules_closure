@@ -108,7 +108,6 @@ def _closure_js_library_impl(
         convention = "CLOSURE",
         no_closure_library = False,
         internal_expect_failure = False,
-        ts_lib=None,
 
         # These file definitions for our outputs are deprecated,
         # and will be replaced with |actions.declare_file()| soon.
@@ -149,15 +148,6 @@ def _closure_js_library_impl(
         deprecated_ijs_file,
         "%s.i.js" % label.name,
     )
-
-    # Wrapper around a ts_library. It's  like creating a closure_js_library with 
-    # the runtime_deps of the ts_library, and the srcs are the tsickle outputs from 
-    # the ts_library.
-    if ts_lib:
-        srcs = srcs + ts_lib.typescript.transitive_es6_sources.to_list()
-        # Note that we need to modify deps before calling unfurl below for exports to work.
-        deps = deps + ts_lib.typescript.runtime_deps.to_list()
-        suppress = suppress + ["checkTypes", "reportUnknownTypes", "analyzerChecks", "JSC_EXTRA_REQUIRE_WARNING"]
 
     # Create a list of direct children of this rule. If any direct dependencies
     # have the exports attribute, those labels become direct dependencies here.
@@ -393,14 +383,26 @@ def _closure_js_library(ctx):
         print("closure_js_library 'externs' is deprecated; just use 'srcs'")
         srcs = ctx.files.externs + srcs
 
+    deps = ctx.attr.deps
+    suppress = ctx.attr.suppress
+
+    # Wrapper around a ts_library. It's  like creating a closure_js_library with 
+    # the runtime_deps of the ts_library, and the srcs are the tsickle outputs from 
+    # the ts_library.
+    if ctx.attr.ts_lib:
+        srcs = srcs + ctx.attr.ts_lib.typescript.transitive_es6_sources.to_list()
+        # Note that we need to modify deps before calling unfurl below for exports to work.
+        deps = deps + ctx.attr.ts_lib.typescript.runtime_deps.to_list()
+        suppress = suppress + ["checkTypes", "strictCheckTypes", "reportUnknownTypes", "analyzerChecks", "JSC_EXTRA_REQUIRE_WARNING"]
+
     library = _closure_js_library_impl(
         ctx.actions,
         ctx.label,
         ctx.workspace_name,
         srcs,
-        ctx.attr.deps,
+        deps,
         ctx.attr.testonly,
-        ctx.attr.suppress,
+        suppress,
         ctx.attr.lenient,
         ctx.files._closure_library_base,
         ctx.executable._ClosureWorker,
@@ -410,7 +412,6 @@ def _closure_js_library(ctx):
         ctx.attr.convention,
         ctx.attr.no_closure_library,
         ctx.attr.internal_expect_failure,
-        ctx.attr.ts_lib,
 
         # Deprecated output files.
         ctx.outputs.info,
@@ -429,7 +430,7 @@ def _closure_js_library(ctx):
             transitive_files = (depset([] if ctx.attr.no_closure_library else ctx.files._closure_library_base) |
                                 collect_runfiles(
                                     unfurl(
-                                        ctx.attr.deps,
+                                        deps+ctx.attr.exports,
                                         provider = "closure_js_library",
                                     ),
                                 ) |
