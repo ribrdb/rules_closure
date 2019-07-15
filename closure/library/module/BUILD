@@ -102,6 +102,7 @@ closure_js_library(
         "//closure/library/events:eventhandler",
         "//closure/library/events:eventid",
         "//closure/library/events:eventtarget",
+        "//closure/library/functions",
         "//closure/library/html:trustedresourceurl",
         "//closure/library/labs/useragent:browser",
         "//closure/library/log",
