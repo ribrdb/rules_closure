@@ -94,6 +94,9 @@ closure_js_library(
     lenient = True,
     deps = [
         "//closure/library/array",
+        "//closure/library/asserts",
+        "//closure/library/dom",
+        "//closure/library/dom:safe",
         "//closure/library/events",
         "//closure/library/events:event",
         "//closure/library/events:eventhandler",
