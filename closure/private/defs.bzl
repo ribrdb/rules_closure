@@ -54,7 +54,6 @@ CLOSURE_WORKER_ATTR = attr.label(
 
 CLOSURE_JS_TOOLCHAIN_ATTRS = {
     "_closure_library_base": CLOSURE_LIBRARY_BASE_ATTR,
-    "_ClosureWorker": CLOSURE_WORKER_ATTR,
 }
 
 def get_jsfile_path(f):

@@ -23,15 +23,23 @@ load(
     "collect_js",
     "collect_runfiles",
     "difference",
-    "find_js_module_roots",
     "get_jsfile_path",
-    "sort_roots",
     "unfurl",
 )
 load(
     "//closure/compiler:closure_js_aspect.bzl",
     "closure_js_aspect",
 )
+
+default_ts_suppress = [
+    "checkTypes",
+    "strictCheckTypes",
+    "reportUnknownTypes",
+    "analyzerChecks",
+    # "JSC_EXTRA_REQUIRE_WARNING",
+    "unusedLocalVariables",
+    "underscore",
+]
 
 def _impl(ctx):
     if not ctx.attr.deps:
@@ -53,7 +61,7 @@ def _impl(ctx):
     _validate_css_graph(ctx, js)
 
     # This is the list of files we'll be generating.
-    outputs = [ctx.outputs.bin, ctx.outputs.map, ctx.outputs.stderr]
+    outputs = [ctx.outputs.bin, ctx.outputs.map]
 
     # This is the subset of that list we'll report to parent rules.
     files = [ctx.outputs.bin, ctx.outputs.map]
@@ -64,13 +72,11 @@ def _impl(ctx):
     # error messages.
     inputs = []
     args = [
-        "JsCompiler",
+        "--platform=native",
         "--js_output_file",
         ctx.outputs.bin.path,
         "--create_source_map",
         ctx.outputs.map.path,
-        "--output_errors",
-        ctx.outputs.stderr.path,
         "--language_in",
         JS_LANGUAGE_IN,
         "--language_out",
@@ -90,42 +96,6 @@ def _impl(ctx):
     if not ctx.attr.debug:
         args.append("--define=goog.DEBUG=false")
 
-    # These ClosureJsLibrary protocol buffers contain information about which
-    # errors should be suppressed in which files.
-    for info in js.infos.to_list():
-        args.append("--info")
-        args.append(info.path)
-        inputs.append(info)
-
-    # We want to test the failure conditions of the compiler from within Bazel,
-    # rather than from a system on top of Bazel like shell scripts. In order to
-    # do that, we need a way to toggle the return status of the process.
-    if ctx.attr.internal_expect_failure:
-        args.append("--expect_failure")
-    if ctx.attr.internal_expect_warnings:
-        args.append("--expect_warnings")
-
-    # We need to help the Closure Compiler turn these weird Bazel paths into
-    # proper ES6 module names. So we give it all the directory prefixes that
-    # should be cut off. These are basically the same thing as C++ include dirs,
-    # except unlike C++ there's no I/O operation penalty to using them since all
-    # source paths that exist are being passed as flags.
-    js_module_roots = sort_roots(
-        depset(transitive = [
-            find_js_module_roots(
-                [ctx.outputs.bin],
-                ctx.workspace_name,
-                ctx.label,
-                getattr(ctx.attr, "includes", []),
-            ),
-            js.js_module_roots,
-        ]),
-    )
-
-    for root in js_module_roots:
-        args.append("--js_module_root")
-        args.append(root)
-
     # For the sake of simplicity we're going to assume that the sourcemap file is
     # stored within the same directory as the compiled JS binary; therefore, the
     # JSON sourcemap file should cite that file as relative to itself.
@@ -135,21 +105,6 @@ def _impl(ctx):
     # By default we're going to include the raw sources in the .js.map file. This
     # can be disabled with the nodefs attribute.
     args.append("--source_map_include_content")
-
-    # We still need to map the source files to paths on the web server. We're
-    # going to use absolute paths relative to the root of the repository. For
-    # example if the label is //foo/bar:lol.js then it will be /foo/bar/lol.js on
-    # the web server, even if lol.js is generated. If the label is @a//b:c.js
-    # then that will be /b/c.js on the web server. The only exception is when the
-    # includes attribute has been used, in which case, directory prefixes may be
-    # cut off.
-    args.append("--source_map_location_mapping")
-    args.append(" [synthetic:| [synthetic:")
-    for root in js_module_roots:
-        args.append("--source_map_location_mapping")
-        args.append("%s/|/" % (root))
-    args.append("--source_map_location_mapping")
-    args.append("|/")
 
     # Some flags we're merely pass along as-is from our attributes.
     if ctx.attr.formatting:
@@ -192,8 +147,8 @@ def _impl(ctx):
     # It is better to put a suppress code on the closure_js_library rule that
     # defined the source responsible for an error. We provide an escape hatch for
     # situations in which that would be unfeasible or burdensome.
-    for code in ctx.attr.suppress_on_all_sources_in_transitive_closure:
-        args.append("--suppress")
+    for code in ctx.attr.suppress_on_all_sources_in_transitive_closure+default_ts_suppress:
+        args.append("--jscomp_off")
         args.append(code)
 
     # In order for us to feel comfortable creating an optimal experience for 99%
@@ -228,15 +183,13 @@ def _impl(ctx):
 
     # Insert an edge into the build graph that produces the minified version of
     # all JavaScript sources in the transitive closure, sans dead code.
-    all_args.use_param_file("@@%s", use_always = True)
-    all_args.set_param_file_format("multiline")
+
     ctx.actions.run(
         inputs = inputs,
         outputs = outputs,
-        executable = ctx.executable._ClosureWorker,
+        executable = ctx.executable._google_closure_compiler,
         arguments = [all_args],
         mnemonic = "Closure",
-        execution_requirements = {"supports-workers": "1"},
         progress_message = "Compiling %d JavaScript files to %s" % (
             len(js.srcs.to_list()),
             ctx.outputs.bin.short_path,
@@ -286,7 +239,6 @@ closure_js_binary = rule(
         "defs": attr.string_list(),
         "dependency_mode": attr.string(default = "LOOSE"),
         "deps": attr.label_list(
-            aspects = [closure_js_aspect],
             providers = ["closure_js_library"],
         ),
         "entry_points": attr.string_list(),
@@ -303,10 +255,16 @@ closure_js_binary = rule(
         # internal only
         "internal_expect_failure": attr.bool(default = False),
         "internal_expect_warnings": attr.bool(default = False),
+        "_google_closure_compiler": attr.label(
+            default = Label(
+                "@npm//google-closure-compiler/bin:google-closure-compiler",
+            ),
+            executable = True,
+            cfg = "host",
+        ),
     }, **CLOSURE_JS_TOOLCHAIN_ATTRS),
     outputs = {
         "bin": "%{name}.js",
         "map": "%{name}.js.map",
-        "stderr": "%{name}-stderr.txt",
     },
 )

@@ -21,23 +21,8 @@ load(
     "JS_LANGUAGE_IN",
     "collect_js",
     "collect_runfiles",
-    "convert_path_to_es6_module_name",
-    "create_argfile",
-    "find_js_module_roots",
-    "library_level_checks",
-    "make_jschecker_progress_message",
-    "sort_roots",
     "unfurl",
 )
-load(
-    "//closure/compiler:closure_js_aspect.bzl",
-    "closure_js_aspect",
-)
-
-def _maybe_declare_file(actions, file, name):
-    if file:
-        return file
-    return actions.declare_file(name)
 
 def create_closure_js_library(
         ctx,
@@ -72,7 +57,7 @@ def create_closure_js_library(
       A closure_js_library metadata struct with exports and closure_js_library attribute
     """
 
-    if not hasattr(ctx.files, "_ClosureWorker") or not hasattr(ctx.files, "_closure_library_base"):
+    if not hasattr(ctx.files, "_closure_library_base"):
         fail("Closure toolchain undefined; rule should include CLOSURE_JS_TOOLCHAIN_ATTRS")
 
     # testonly exist for all rules but if it is an aspect it need to accessed over ctx.rule.
@@ -90,7 +75,6 @@ def create_closure_js_library(
         convention = convention,
         testonly = testonly,
         closure_library_base = ctx.files._closure_library_base,
-        closure_worker = ctx.executable._ClosureWorker,
     )
 
 def _closure_js_library_impl(
@@ -104,7 +88,7 @@ def _closure_js_library_impl(
         lenient,
         convention,
         closure_library_base,
-        closure_worker,
+        closure_worker = None,
         includes = (),
         exports = depset(),
         internal_descriptors = depset(),
@@ -117,42 +101,6 @@ def _closure_js_library_impl(
         deprecated_stderr_file = None,
         deprecated_ijs_file = None,
         deprecated_typecheck_file = None):
-    # TODO(yannic): Figure out how to modify |find_js_module_roots|
-    # so that we won't need |workspace_name| anymore.
-
-    if lenient:
-        suppress = suppress + [
-            "analyzerChecks",
-            "analyzerChecksInternal",
-            "deprecated",
-            "legacyGoogScopeRequire",
-            "lintChecks",
-            "missingOverride",
-            "reportUnknownTypes",
-            "strictCheckTypes",
-            "strictModuleChecks",
-            "superfluousSuppress",
-            "unnecessaryEscape",
-            "underscore",
-        ]
-
-    # TODO(yannic): Always use |actions.declare_file()|.
-    info_file = _maybe_declare_file(
-        actions,
-        deprecated_info_file,
-        "%s.pbtxt" % label.name,
-    )
-    stderr_file = _maybe_declare_file(
-        actions,
-        deprecated_stderr_file,
-        "%s-stderr.txt" % label.name,
-    )
-    ijs_file = _maybe_declare_file(
-        actions,
-        deprecated_ijs_file,
-        "%s.i.js" % label.name,
-    )
-
     # Create a list of direct children of this rule. If any direct dependencies
     # have the exports attribute, those labels become direct dependencies here.
     deps = unfurl(deps, provider = "closure_js_library")
@@ -172,140 +120,10 @@ def _closure_js_library_impl(
         if hasattr(dep, "closure_css_library"):
             stylesheets.append(dep.label)
 
-    # JsChecker is a program that's run via the ClosureWorker persistent Bazel
-    # worker. This program is a modded version of the Closure Compiler. It does
-    # syntax checking and linting on the srcs files specified by this target, and
-    # only this target. It does not output a JS file, but it does output a
-    # ClosureJsLibrary protobuf info file with useful information extracted from
-    # the abstract syntax tree, such as provided namespaces. This information is
-    # propagated up to parent rules for strict dependency checking. It's also
-    # used by the Closure Compiler when producing the final JS binary.
-    args = [
-        "JsChecker",
-        "--label",
-        str(label),
-        "--output",
-        info_file.path,
-        "--output_errors",
-        stderr_file.path,
-        "--output_ijs_file",
-        ijs_file.path,
-        "--convention",
-        convention,
-    ]
-
-    # Because JsChecker is an edge in the build graph, we need to declare all of
-    # its input vertices.
-    inputs = []
-
-    # We want to test the failure conditions of this rule from within Bazel,
-    # rather than from a meta-system like shell scripts. In order to do that, we
-    # need a way to toggle the return status of the process.
-    if internal_expect_failure:
-        args.append("--expect_failure")
-
-    # JsChecker wants to know if this is a testonly rule so it can throw an error
-    # if goog.setTestOnly() is used.
-    if testonly:
-        args.append("--testonly")
-
-    # The suppress attribute is a Closure Rules feature that makes warnings and
-    # errors go away. It's a list of strings containing DiagnosticGroup (coarse
-    # grained) or DiagnosticType (fine grained) codes. These apply not only to
-    # JsChecker, but also propagate up to closure_js_binary.
-    for s in suppress:
-        args.append("--suppress")
-        args.append(s)
-
-    # Pass source file paths to JsChecker. Under normal circumstances, these
-    # paths appear to be relative to the root of the repository. But they're
-    # actually relative to the ctx.action working directory, which is a folder
-    # full of symlinks generated by Bazel which point to the actual files. These
-    # paths might contain weird bazel-out/blah/external/ prefixes. These paths
-    # are by no means canonical and can change for a particular file based on
-    # where the ctx.action is located.
-    # TODO(davido): Find out how to avoid that hack
     srcs_it = srcs
     if type(srcs) == "depset":
         srcs_it = srcs.to_list()
-    for f in srcs_it:
-        args.append("--src")
-        args.append(f.path)
-        inputs.append(f)
-
-    # In order for JsChecker to turn weird Bazel paths into ES6 module names, we
-    # need to give it a list of path prefixes to strip. By default, the ES6
-    # module name is the same as the filename relative to the root of the
-    # repository, ignoring the workspace name. The exception is when the includes
-    # attribute is being used, which chops the path down even further.
-    js_module_roots = sort_roots(
-        find_js_module_roots(srcs, workspace_name, label, includes),
-    )
-    for root in js_module_roots:
-        args.append("--js_module_root")
-        args.append(root)
-
-    # We keep track of ES6 module names so we can guarantee that no namespace
-    # collisions exist for any particular transitive closure. By making it
-    # canonical, we can use it to propagate suppressions up to closure_js_binary.
-    # TODO(davido): Find out how to avoid that hack
-    modules = [
-        convert_path_to_es6_module_name(
-            f.path if not f.is_directory else f.path + "/*.js",
-            js_module_roots,
-        )
-        for f in srcs_it
-    ]
-    for module in modules:
-        if module in js.modules.to_list():
-            fail(("ES6 namespace '%s' already defined by a dependency. Check the " +
-                  "deps transitively. Remember that namespaces are relative to the " +
-                  "root of the repository unless includes=[...] is used") % module)
-    if len(modules) != len(depset(modules).to_list()):
-        fail("Intrarule namespace collision detected")
-
-    # Give JsChecker the ClosureJsLibrary protobufs outputted by direct children.
-    for dep in deps:
-        # Polymorphic rules, e.g. closure_css_library, might not provide this.
-        info = getattr(dep.closure_js_library, "info", None)
-        if info:
-            args.append("--dep")
-            args.append(info.path)
-            inputs.append(info)
-
-    # The list of flags could potentially be very long. So we're going to write
-    # them all to a file which gets loaded automatically by our BazelWorker
-    # middleware.
-    argfile = create_argfile(actions, label.name, args)
-    inputs.append(argfile)
-
-    # Add a JsChecker edge to the build graph. The command itself will only be
-    # executed if something that requires its output is executed.
-    actions.run(
-        inputs = inputs,
-        outputs = [info_file, stderr_file, ijs_file],
-        executable = closure_worker,
-        arguments = ["@@" + argfile.path],
-        mnemonic = "Closure",
-        execution_requirements = {"supports-workers": "1"},
-        progress_message = make_jschecker_progress_message(srcs, label),
-    )
-
-    library_level_checks(
-        actions = actions,
-        label = label,
-        ijs_deps = js.ijs_files,
-        srcs = srcs,
-        executable = closure_worker,
-        output = _maybe_declare_file(
-            actions,
-            deprecated_typecheck_file,
-            "%s_typecheck" % label.name,
-        ),
-        suppress = suppress,
-        internal_expect_failure = internal_expect_failure,
-    )
-
+ 
     if type(internal_descriptors) == "list":
         internal_descriptors = depset(internal_descriptors)
 
@@ -339,13 +157,13 @@ def _closure_js_library_impl(
             # as well as information extracted from inside the srcs files, e.g.
             # goog.provide'd namespaces. It is used for strict dependency
             # checking, a.k.a. layering checks.
-            info = info_file,
+            info = None,
             # NestedSet<File> of all info files in the transitive closure. This
             # is used by JsCompiler to apply error suppression on a file-by-file
             # basis.
-            infos = depset([info_file], transitive = [js.infos]),
-            ijs = ijs_file,
-            ijs_files = depset([ijs_file], transitive = [js.ijs_files]),
+            infos = depset(),
+            ijs = None,
+            ijs_files = depset(),
             # NestedSet<File> of all JavaScript source File artifacts in the
             # transitive closure. These files MUST be JavaScript.
             srcs = depset(srcs_it, transitive = [js.srcs]),
@@ -356,13 +174,13 @@ def _closure_js_library_impl(
             # generated roots, external repository roots, and includes
             # prefixes. This is passed to JSCompiler via the --js_module_root
             # flag. See find_js_module_roots() in defs.bzl.
-            js_module_roots = depset(js_module_roots, transitive = [js.js_module_roots]),
+            js_module_roots = depset(),
             # NestedSet<String> of all ES6 module name strings in the transitive
             # closure. These are generated from the source file path relative to
             # the longest matching root prefix. It is used to guarantee that
             # within any given transitive closure, no namespace collisions
             # exist. These MUST NOT begin with "/" or ".", or contain "..".
-            modules = depset(modules, transitive = [js.modules]),
+            modules = depset(),
             # NestedSet<File> of all protobuf definitions in the transitive
             # closure. It is used so Closure Templates can have information about
             # the structure of protobufs so they can be easily rendered in .soy
@@ -406,18 +224,12 @@ def _closure_js_library(ctx):
         ctx.attr.lenient,
         ctx.attr.convention,
         ctx.files._closure_library_base,
-        ctx.executable._ClosureWorker,
+        None,
         getattr(ctx.attr, "includes", []),
         ctx.attr.exports,
         ctx.files.internal_descriptors,
         ctx.attr.no_closure_library,
         ctx.attr.internal_expect_failure,
-
-        # Deprecated output files.
-        ctx.outputs.info,
-        ctx.outputs.stderr,
-        ctx.outputs.ijs,
-        ctx.outputs.typecheck,
     )
 
     return struct(
@@ -448,11 +260,9 @@ closure_js_library = rule(
         ),
         "data": attr.label_list(allow_files = True),
         "deps": attr.label_list(
-            aspects = [closure_js_aspect],
             providers = ["closure_js_library"],
         ),
         "exports": attr.label_list(
-            aspects = [closure_js_aspect],
             providers = ["closure_js_library"],
         ),
         "includes": attr.string_list(),
@@ -469,12 +279,4 @@ closure_js_library = rule(
         "internal_descriptors": attr.label_list(allow_files = True),
         "internal_expect_failure": attr.bool(default = False),
     }, **CLOSURE_JS_TOOLCHAIN_ATTRS),
-    # TODO(yannic): Deprecate.
-    #     https://docs.bazel.build/versions/master/skylark/lib/globals.html#rule.outputs
-    outputs = {
-        "info": "%{name}.pbtxt",
-        "stderr": "%{name}-stderr.txt",
-        "ijs": "%{name}.i.js",
-        "typecheck": "%{name}_typecheck",  # dummy output file
-    },
 )
