@@ -60,11 +60,18 @@ def _impl(ctx):
 
     _validate_css_graph(ctx, js)
 
+    sourcemap = None
+
     # This is the list of files we'll be generating.
-    outputs = [ctx.outputs.bin, ctx.outputs.map]
+    outputs = [ctx.outputs.bin]
 
     # This is the subset of that list we'll report to parent rules.
-    files = [ctx.outputs.bin, ctx.outputs.map]
+    files = [ctx.outputs.bin]
+
+    if ctx.attr.compilation_level != 'BUNDLE':
+        sourcemap = ctx.actions.declare_file(ctx.label.name+".js.map",sibling = ctx.outputs.bin)
+        outputs.append(sourcemap)
+        files.append(sourcemap)
 
     # JsCompiler is thin veneer over the Closure compiler. It's configured with a
     # superset of its flags. It introduces a private testing API, allows per-file
@@ -75,8 +82,6 @@ def _impl(ctx):
         "--platform=native",
         "--js_output_file",
         ctx.outputs.bin.path,
-        "--create_source_map",
-        ctx.outputs.map.path,
         "--language_in",
         JS_LANGUAGE_IN,
         "--language_out",
@@ -92,6 +97,10 @@ def _impl(ctx):
         "--define=goog.json.USE_NATIVE_JSON",
         "--hide_warnings_for=closure/goog/base.js",
     ]
+
+    if sourcemap:
+        args.append("--create_source_map")
+        args.append(sourcemap.path)
 
     if not ctx.attr.debug:
         args.append("--define=goog.DEBUG=false")
@@ -205,7 +214,7 @@ def _impl(ctx):
         closure_js_library = js,
         closure_js_binary = struct(
             bin = ctx.outputs.bin,
-            map = ctx.outputs.map,
+            map = sourcemap,
             language = ctx.attr.language,
         ),
         runfiles = ctx.runfiles(
@@ -265,6 +274,5 @@ closure_js_binary = rule(
     }, **CLOSURE_JS_TOOLCHAIN_ATTRS),
     outputs = {
         "bin": "%{name}.js",
-        "map": "%{name}.js.map",
     },
 )
