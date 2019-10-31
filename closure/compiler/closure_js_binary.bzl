@@ -125,12 +125,6 @@ def _impl(ctx):
         args.append("--entry_point")
         args.append(entry_point)
 
-    # It would be quite onerous to put an /** @export */ and entry_point on every
-    # single testFoo, setUp, and tearDown function. This undocumented flag is a
-    # godsend for testing in ADVANCED mode that releases us from this toil.
-    if ctx.attr.testonly:
-        args.append("--export_test_functions")
-
     # Those who write JavaScript on the hardest difficulty setting shall be
     # rewarded accordingly.
     if ctx.attr.compilation_level == "ADVANCED":
