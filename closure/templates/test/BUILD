@@ -16,12 +16,7 @@ package(default_testonly = True)
 
 licenses(["notice"])  # Apache 2.0
 
-load("//closure:defs.bzl", "closure_js_binary")
-load("//closure:defs.bzl", "closure_js_library")
-load("//closure:defs.bzl", "closure_js_proto_library")
-load("//closure:defs.bzl", "closure_js_template_library")
-load("//closure:defs.bzl", "closure_js_test")
-load("//closure:defs.bzl", "closure_java_template_library")
+load("//closure:defs.bzl", "closure_java_template_library", "closure_js_library", "closure_js_proto_library", "closure_js_template_library", "closure_js_test")
 load("//closure/private:file_test.bzl", "file_test")
 
 closure_js_proto_library(
@@ -73,7 +68,10 @@ file_test(
 closure_js_template_library(
     name = "greeter_proto_soy",
     srcs = ["greeter_proto.soy"],
-    deps = [":person_proto"],
+    deps = [
+        ":greeter_soy",
+        ":person_proto",
+    ],
 )
 
 closure_js_library(
@@ -130,6 +128,22 @@ file_test(
     size = "small",
     file = "GreeterSoyInfo.java",
     regexp = "class GreeterSoyInfo",
+)
+
+closure_java_template_library(
+    name = "greeter2_soy_java",
+    srcs = ["greeter2.soy"],
+    java_package = "io.bazel.rules.closure.soy.greeter",
+    deps = [
+        ":greeter_soy",
+    ],
+)
+
+file_test(
+    name = "greeter2_java_generated",
+    size = "small",
+    file = "Greeter2SoyInfo.java",
+    regexp = "class Greeter2SoyInfo",
 )
 
 ################################################################################
