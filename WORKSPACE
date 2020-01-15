@@ -131,7 +131,7 @@ java_import_external(
     jar_sha256 = "0f7dced2a16e55a77e44fc3ff9c5be98d4bf4bb30abc18d78ffd735df950a69f",
     jar_urls = [
         "https://mirror.bazel.build/repo1.maven.org/maven2/com/google/truth/truth/0.45/truth-0.45.jar",
-        "http://repo1.maven.org/maven2/com/google/truth/truth/0.45/truth-0.45.jar",
+        "https://repo1.maven.org/maven2/com/google/truth/truth/0.45/truth-0.45.jar",
         "http://maven.ibiblio.org/maven2/com/google/truth/truth/0.45/truth-0.45.jar",
     ],
     licenses = ["notice"],  # Apache 2.0
