@@ -27,8 +27,6 @@ load("//closure/templates:closure_templates_plugin.bzl", _closure_templates_plug
 load("//closure/testing:closure_js_test.bzl", _closure_js_test = "closure_js_test")
 load("//closure/testing:phantomjs_test.bzl", _phantomjs_test = "phantomjs_test")
 load("//closure:filegroup_external.bzl", _filegroup_external = "filegroup_external")
-load("//closure:webfiles/web_library.bzl", _web_library = "web_library")
-load("//closure:webfiles/web_library_external.bzl", _web_library_external = "web_library_external")
 
 closure_js_aspect = _closure_js_aspect
 closure_js_binary = _closure_js_binary
@@ -46,5 +44,3 @@ closure_templates_plugin = _closure_templates_plugin
 closure_js_test = _closure_js_test
 phantomjs_test = _phantomjs_test
 filegroup_external = _filegroup_external
-web_library = _web_library
-web_library_external = _web_library_external
